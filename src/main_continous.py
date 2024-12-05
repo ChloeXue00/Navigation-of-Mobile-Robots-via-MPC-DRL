@@ -8,7 +8,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 ### DRL import
+import gymnasium as gym
 import gym
+from gymnasium.envs.registration import register
+
 from torch import no_grad
 from stable_baselines3 import DDPG,TD3
 from pkg_ddpg_td3.utils.per_ddpg import PerDDPG
@@ -29,6 +32,12 @@ from pkg_ddpg_td3.utils.map import test_scene_1_dict, test_scene_2_dict
 ### Others
 from timer import PieceTimer, LoopTimer
 from typing import List, Tuple
+
+
+register(
+    id='TrajectoryPlannerEnvironmentRaysReward1-v0',
+    entry_point='your_module:TrajectoryPlannerEnvironment',
+)
 
 MAX_RUN_STEP = 200
 DYN_OBS_SIZE = 0.8 + 0.8

@@ -9,8 +9,8 @@ example agent to train and evaluate by setting the ``index`` varaible
 import random
 import numpy as np
 import copy
-
-import gym
+import gymnasium as gym
+# import gym
 from torch import no_grad
 
 from stable_baselines3 import DDPG
@@ -24,6 +24,43 @@ from pkg_dqn.utils.plotresults import plot_training_results
 from pkg_dqn.utils.map import generate_map_dynamic, generate_map_corridor, generate_map_mpc
 
 from pkg_dqn.environment import MapDescription, MobileRobot
+#add new 
+from pkg_dqn.environment.components.component import Component
+from configs import CircularRobotSpecification
+from pkg_robot.robot import Robot
+from map_processor import MapProcessor
+from gymnasium.envs.registration import register
+from gymnasium import make
+import sys
+import os
+from pkg_dqn.environment.environment import TrajectoryPlannerEnvironment
+from pkg_ddpg_td3.environment.variants.rays_reward1 import TrajectoryPlannerEnvironmentRaysReward1
+
+
+
+# add pkg_dqn's root dir to sys.path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, project_root)
+
+register(
+    id='TrajectoryPlannerEnvironmentRaysReward1-v0',
+    entry_point='pkg_ddpg_td3.environment.variants.rays_reward1:TrajectoryPlannerEnvironment',
+    kwargs={
+        "components": list[Component],  # Provide default components
+        "generate_map": generate_map_dynamic,  # Provide a default map generation function
+        "time_step": 0.2,  # Optional, default time_step
+    },
+)
+
+env = make("TrajectoryPlannerEnvironmentRaysReward1-v0")
+obs, info = env.reset()
+print("Initial Observation:", obs)
+
+
+action = env.action_space.sample()
+obs, reward, terminated, truncated, info = env.step(action)
+print("Step Results:", obs, reward, terminated, truncated, info)
+
 
 TO_TRAIN = False
 TO_SAVE = False
@@ -55,9 +92,11 @@ def run():
     ][index]
 
     if index == 0:
-        path = f'./././Model/image'
+        # path = f'./././Model/image'
+        path = '~/DRL-Traj-Planner/Model/image'
     elif index == 1:
-        path = f'./././Model/ray'
+        # path = f'./././Model/ray'
+        path = '~/DRL-Traj-Planner/Model/ray'
     else:
         raise ValueError('Invalid index')
 
@@ -65,7 +104,7 @@ def run():
     n_cpu = 4
 
     env_eval = gym.make(variant['env_name'], generate_map=generate_map)
-    check_env(env_eval)
+    # check_env(env_eval)
 
     vec_env      = make_vec_env(variant['env_name'], n_envs=n_cpu, seed=0, vec_env_cls=SubprocVecEnv, env_kwargs={'generate_map': generate_map})
     vec_env_eval = make_vec_env(variant['env_name'], n_envs=n_cpu, seed=0, vec_env_cls=SubprocVecEnv, env_kwargs={'generate_map': generate_map_mpc(11)})

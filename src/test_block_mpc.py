@@ -54,8 +54,8 @@ for robot_id in range(len(sim.start)):
 ### Start & run MPC
 playback_dict = sim.run(sim.graph, sim.scanner, plot_in_loop=PLOT_INLOOP)
 
-### Plot results (press any key to continue in dynamic mode if stuck)
-# xx, xy     = np.array(state_list)[:,0],  np.array(state_list)[:,1]
-# uv, uomega = np.array(action_list)[:,0], np.array(action_list)[:,1]
-# plotter = MpcPlotAfter(config, legend_style='single', double_map=False)
-# plotter.plot_results(sim.graph, xx, xy, uv, uomega, cost_list, start, end, animation=show_animation, scanner=sim.scanner, video=save_animation)
+## Plot results (press any key to continue in dynamic mode if stuck)
+xx, xy     = np.array(state_list)[:,0],  np.array(state_list)[:,1]
+uv, uomega = np.array(action_list)[:,0], np.array(action_list)[:,1]
+plotter = MpcPlotAfter(config, legend_style='single', double_map=False)
+plotter.plot_results(sim.graph, xx, xy, uv, uomega, cost_list, start, end, animation=show_animation, scanner=sim.scanner, video=save_animation)
