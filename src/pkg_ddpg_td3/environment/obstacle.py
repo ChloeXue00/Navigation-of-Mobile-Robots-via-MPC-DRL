@@ -3,8 +3,8 @@ import numpy as np
 import random
 from shapely.geometry import Polygon, JOIN_STYLE
 
-from . import MobileRobot
-
+# from . import MobileRobot
+from pkg_ddpg_td3.environment.agent import MobileRobot
 from typing import Union, Callable, List
 from numpy.typing import NDArray, ArrayLike
 

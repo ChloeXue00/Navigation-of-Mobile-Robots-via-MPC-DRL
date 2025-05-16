@@ -4,6 +4,7 @@ from packaging import version
 
 import gymnasium as gym
 from gymnasium import spaces
+from gymnasium import Env
 
 import numpy as np
 from numpy.linalg import norm
@@ -13,8 +14,8 @@ from matplotlib import gridspec
 from shapely.geometry import LineString
 from extremitypathfinder import PolygonEnvironment
 
-from . import plot, MobileRobot, MapGenerator, MapDescription
-from .components.component import Component
+from pkg_ddpg_td3.environment import plot, MobileRobot, MapGenerator, MapDescription
+from pkg_ddpg_td3.environment.components  import Component
 
 from typing import Union, List, Tuple
 from numpy.typing import NDArray
@@ -38,11 +39,12 @@ class TrajectoryPlannerEnvironment(gym.Env):
 
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
     rendered:bool=False
+    # rendered:bool=True
 
     # Component producing external observations
     external_obs_component: Union[Component, None] = None
 
-    def __init__(self, components: list[Component], generate_map: MapGenerator, time_step:float=0.2):
+    def __init__(self, components: list[Component], generate_map: MapGenerator, time_step:float=0.2,render_mode=None):
         """
         :param components: The components which this environemnt should use.
         :param generate_map: Map generation function. 
@@ -51,6 +53,7 @@ class TrajectoryPlannerEnvironment(gym.Env):
         self.generate_map = generate_map
         self.time_step = time_step
         self.render_cnt = 0
+        self.render_mode = render_mode  # 新增 render_mode 参数
 
         for component in self.components:
             component.env = self

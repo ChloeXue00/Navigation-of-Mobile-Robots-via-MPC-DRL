@@ -1,6 +1,6 @@
-from ..components import *
-from .. import MapGenerator, MobileRobot
-from ..environment import TrajectoryPlannerEnvironment
+from pkg_ddpg_td3.environment.components import *
+from pkg_ddpg_td3.environment import MapGenerator, MobileRobot
+from pkg_ddpg_td3.environment.environment import TrajectoryPlannerEnvironment
 
 
 class TrajectoryPlannerEnvironmentRaysReward2(TrajectoryPlannerEnvironment):

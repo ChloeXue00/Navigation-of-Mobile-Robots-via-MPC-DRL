@@ -10,7 +10,7 @@ import random
 import numpy as np
 import copy
 
-import gym
+import gymnasium as gym
 from torch import no_grad
 
 from stable_baselines3 import DDPG
@@ -24,6 +24,20 @@ from pkg_dqn.utils.plotresults import plot_training_results
 from pkg_dqn.utils.map import generate_map_dynamic, generate_map_corridor, generate_map_mpc
 
 from pkg_dqn.environment import MapDescription, MobileRobot
+from pkg_ddpg_td3.environment.components import Component
+
+#add register
+from gymnasium.envs.registration import register
+
+register(
+    id='TrajectoryPlannerEnvironmentRaysReward1-v0',
+    entry_point='pkg_ddpg_td3.environment.variants.rays_reward1:TrajectoryPlannerEnvironment',
+    kwargs={
+        "components": [Component()],  # 替换为实际组件实例
+        "generate_map": generate_map_dynamic,  
+        "time_step": 0.2,  
+    },
+)
 
 TO_TRAIN = False
 TO_SAVE = False

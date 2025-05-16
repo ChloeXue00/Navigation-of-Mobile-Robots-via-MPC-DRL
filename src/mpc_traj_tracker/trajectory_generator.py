@@ -2,13 +2,14 @@
 import os
 import sys
 import math
+import ctypes
 
 # External import
 import numpy as np
 
 # Custom import 
 from util.mpc_config import Configurator
-from ._path import PathNode, PathNodeList, TrajectoryNode, TrajectoryNodeList
+from mpc_traj_tracker._path import PathNode, PathNodeList, TrajectoryNode, TrajectoryNodeList
 
 from typing import Callable, Tuple, Union, List, Dict, Any
 
@@ -62,7 +63,10 @@ class TrajectoryGenerator:
 
     def __import_solver(self, root_dir:str='', use_tcp:bool=False):
         self.use_tcp = use_tcp
-        solver_path = os.path.join(root_dir, self.config.build_directory, self.config.optimizer_name)
+        # solver_path = os.path.join(root_dir, self.config.build_directory, self.config.optimizer_name) #'/home/fengxiang/DRL-Traj-Planner/src/mpc_solver/navi_longiter' 
+        solver_path ='/home/fengxiang/DRL-Traj-Planner/src/mpc_solver/navi_longiter'
+        # print(f"Solver Path: {solver_path}")
+        # assert os.path.exists(solver_path), f"Solver path does not exist: {solver_path}"
 
         import opengen as og
         if not use_tcp:
@@ -273,6 +277,7 @@ class TrajectoryGenerator:
                  self.tuning_params + current_refs + speed_ref_list + \
                  other_robot_states + \
                  stc_constraints + dyn_constraints + self.stc_weights + self.dyn_weights
+        print(f"Generated parameter count: {len(params)}")
 
         try:
             taken_states, pred_states, actions, cost, solver_time, exit_status = self.run_solver(params, self.state, self.config.action_steps, initial_guess)

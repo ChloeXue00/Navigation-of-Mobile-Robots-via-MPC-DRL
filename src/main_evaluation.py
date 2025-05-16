@@ -7,13 +7,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 ### DRL import
-import gym
+import gymnasium as gym
 from torch import no_grad
+from stable_baselines3 import DDPG,TD3
 from stable_baselines3 import DQN
 from stable_baselines3.common import env_checker
 
 from pkg_dqn.environment import MobileRobot
 from pkg_dqn.environment.environment import TrajectoryPlannerEnvironment
+from pkg_ddpg_td3.environment import MobileRobot
+from pkg_ddpg_td3.environment.environment import TrajectoryPlannerEnvironment
 
 ### MPC import
 from interface_mpc import InterfaceMpc
@@ -21,10 +24,25 @@ from util.mpc_config import Configurator
 
 ### Helper
 from helper_main import generate_map, get_geometric_map, HintSwitcher, Metrics
+from pkg_ddpg_td3.environment.components import Component
 
 ### Others
 from timer import PieceTimer
 from typing import Tuple
+
+#add register
+from gymnasium.envs.registration import register
+
+register(
+    id='TrajectoryPlannerEnvironmentRaysReward1-v0',
+    entry_point='pkg_dqn.environment.variants.rays_reward1:TrajectoryPlannerEnvironment',
+    kwargs={
+        "components": [Component()],  # 替换为实际组件实例
+        "generate_map": generate_map,  
+        "time_step": 0.2,  
+    },
+)
+
 
 MAX_RUN_STEP = 200
 DYN_OBS_SIZE = 0.8 + 0.8
@@ -63,6 +81,7 @@ def load_rl_model_env(generate_map, index: int) -> Tuple[DQN, TrajectoryPlannerE
     model_path = os.path.join(pathlib.Path(__file__).resolve().parents[1], 'Model/dqn', model_folder_name, 'best_model')
     
     env_eval:TrajectoryPlannerEnvironment = gym.make(variant['env_name'], generate_map=generate_map)
+    # env_eval:TrajectoryPlannerEnvironment = gymnasium.make(variant['env_name'], generate_map=generate_map)
     env_checker.check_env(env_eval)
     model = DQN.load(model_path)
     return model, env_eval

@@ -22,7 +22,7 @@ low_speed:    0.2
 
 # Parameters specific to the MPC
 ts: 0.2          # Size of the time-step (sampling time)
-N_hor: 20        # The length of the receding horizon controller
+N_hor: 20      # The length of the receding horizon controller
 action_steps: 1  # How many steps should be taken from each mpc-solution. Range (1 - N_hor)
 
 # Penalty weights
@@ -50,6 +50,7 @@ ndynobs: 6   # Number of variables per dynamic obstacle
 
 # Building options in the optimizer
 build_type: 'release'          # Can have 'debug' or 'release'
-build_directory: 'mpc_solver'   # Name of the directory where the build is created
+# build_directory: '/home/fengxiang/DRL-Traj-Planner/mpc_solver'   # Name of the directory where the build is created
+build_directory: '/home/fengxiang/DRL-Traj-Planner/src/mpc_solver'   # Name of the directory where the build is created
 bad_exit_codes: ["NotConvergedIterations", "NotConvergedOutOfTime"] # Optimizer specific names, otherwise "Converged"
 optimizer_name: 'navi_longiter'   # optimizer name

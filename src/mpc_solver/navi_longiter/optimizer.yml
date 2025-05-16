@@ -1,9 +1,9 @@
 _comment: auto-generated file; do not modify
 build:
-  build_dir: mpc_solver
+  build_dir: /home/fengxiang/DRL-Traj-Planner/src/mpc_solver
   build_mode: release
   open_version: null
-  opengen_version: 0.7.1
+  opengen_version: 0.9.2
   target_system: null
 meta:
   authors:

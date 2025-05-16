@@ -84,8 +84,13 @@ def run():
     run_index = int(sys.argv[2])
 
     # Select the path where the model should be stored
-    path = f'/cephyr/users/cederk/Vera/github/DRL-Traj-Planner/Model/training/variant-{index}/run{run_index}'
-
+    # path = f'/cephyr/users/cederk/Vera/github/DRL-Traj-Planner/Model/training/variant-{index}/run{run_index}'
+    
+    #image path
+    path = f'/home/fengxiang/DRL-Traj-Planner/Model/ddpg/training/variant-{index}/run{run_index}'
+    #ray path
+    path = f'/home/fengxiang/DRL-Traj-Planner/Model/ddpg/training/variant-{index}/run{run_index}'
+    
     # Parameters for different example agent models 
     variant = [
         {
@@ -148,7 +153,7 @@ def run():
     ][index]
 
     tot_timesteps = 7e6
-    n_cpu = 32
+    n_cpu = 4
     
     # Load a pre-trained model
     load_checkpoint = 0

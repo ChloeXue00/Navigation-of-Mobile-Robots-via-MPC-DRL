@@ -12,7 +12,10 @@ import shapely.ops
 from shapely.geometry import LineString, Polygon, JOIN_STYLE, Point
 from math import pi, radians, cos, sin
 
-from ..environment import MobileRobot, Obstacle, Boundary, Goal, MapDescription, MapGenerator
+from pkg_ddpg_td3.environment.agent import MobileRobot
+from pkg_ddpg_td3.environment.obstacle import Obstacle, Boundary
+from pkg_ddpg_td3.environment.goal import Goal
+from pkg_ddpg_td3.environment import MapDescription, MapGenerator
 
 from typing import Union, List, Tuple
 

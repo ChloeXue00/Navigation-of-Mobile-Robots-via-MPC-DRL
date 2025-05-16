@@ -26,13 +26,28 @@ from util.mpc_config import Configurator
 from helper_main_continous import generate_map, get_geometric_map, HintSwitcher, Metrics
 from pkg_ddpg_td3.utils.map import test_scene_1_dict, test_scene_2_dict
 #from pkg_dqn.utils.map import test_scene_1_dict, test_scene_2_dict
-
+from pkg_ddpg_td3.environment.components import Component
 ### Others
 from timer import PieceTimer, LoopTimer
 from typing import List, Tuple
 
 import warnings
 warnings.filterwarnings("ignore")
+
+
+#add register
+from gymnasium.envs.registration import register
+
+register(
+    id='TrajectoryPlannerEnvironmentRaysReward1-v0',
+    entry_point='pkg_ddpg_td3.environment.variants.rays_reward1:TrajectoryPlannerEnvironment',
+    kwargs={
+        "components": [Component()],  # 替换为实际组件实例
+        "generate_map": generate_map,  
+        "time_step": 0.2,  
+    },
+)
+
 
 MAX_RUN_STEP = 200
 DYN_OBS_SIZE = 0.8 + 0.8
@@ -333,10 +348,24 @@ if __name__ == '__main__':
 
     decision_mode: 0 = MPC, 1 = DDPG, 2 = TD3, 3 = Hybrid DDPG, 4 = Hybrid TD3  
     """
+    
+    """
+
+    scene_option = (sub_index,scene_option)
+    Subscene index (`sub_index`) with scene option (`scene_option`): 
+    - 1: Single rectangular static obstacle 
+        - (1-small, 2-medium, 3-large)
+    - 2: Two rectangular static obstacles 
+        - (1-small stagger, 2-large stagger, 3-close aligned, 4-far aligned)
+    - 3: Single non-convex static obstacle
+        - (1-big u-shape, 2-small u-shape, 3-big v-shape, 4-small v-shape)
+    - 4: Single dynamic obstacle
+        - (1-crash, 2-cross)
+    """
     scene_option = (1, 1, 1)
 
-    # time_list_mpc     = main(rl_index=1,    decision_mode=0,  to_plot=False, scene_option=scene_option, save_num=1) # Eval MPC using main.py
+    # time_list_mpc     = main(rl_index=1,    decision_mode=0,  to_plot=True, scene_option=scene_option, save_num=1) # Eval MPC using main.py
     # time_list_img     = main(rl_index=0,    decision_mode=1,  to_plot=False, scene_option=scene_option, save_num=3)
-    time_list_hyb_img = main(rl_index=0,    decision_mode=3,  to_plot=True, scene_option=scene_option, save_num=5)
+    time_list_hyb_img = main(rl_index=0,    decision_mode=3,  to_plot=True, scene_option=scene_option, save_num=5)  # img, hybrid DDPG, 
 
     input('Press enter to exit...')

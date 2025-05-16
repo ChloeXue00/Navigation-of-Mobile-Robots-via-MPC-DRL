@@ -19,7 +19,8 @@ class Configurator:
             print(f'{self.__prtname} Configuration done.')
 
 if __name__ == '__main__':
-    yaml_fpath = '/home/ze/Documents/Code2/DyObAv_MPCnEBM_Assemble/config/mpc_default.yaml'
+    yaml_fpath = '/home/fengxiang/DRL-Traj-Planner/config/mpc_longiter.yaml'
+    # yaml_fpath = '/home/ze/Documents/Code2/DyObAv_MPCnEBM_Assemble/config/mpc_default.yaml'
     cfg = Configurator(yaml_fpath)
     print(cfg)
 

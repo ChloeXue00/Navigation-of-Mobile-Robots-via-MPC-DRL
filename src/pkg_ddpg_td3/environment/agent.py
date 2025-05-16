@@ -1,8 +1,10 @@
+# from __future__ import annotations
 import numpy as np
 from shapely.geometry import Point
 
 from numpy.typing import ArrayLike, NDArray
-
+# from pkg_ddpg_td3.environment.environment import MobileRobot
+# from pkg_ddpg_td3.environment.obstacle import Obstacle
 
 class MobileRobotSpecification:
     RADIUS = 0.5
@@ -106,7 +108,8 @@ class MobileRobot:
         - If ref_speed is non-positive, use self.cfg.SPEED_MAX.
         """
         self.step_with_decay_angular_velocity(time_step, ref_speed=ref_speed)
-
+        
+    # undynamic way
     def step_with_decay_angular_velocity(self, time_step: float, ref_speed:float=None) -> None:
         self.angular_velocity *= 0.95
         self.angle += time_step * self.angular_velocity
@@ -115,7 +118,33 @@ class MobileRobot:
         elif ref_speed <= 0.0:
             ref_speed = self.cfg.SPEED_MAX
         self.position += time_step * ref_speed  * np.asarray((np.cos(self.angle), np.sin(self.angle)))
+    
+    def compute_decay(self, min_distance=0.5,safe_distance: float = 2.0, critical_distance: float = 1.0) -> float:
+        """
+        动态计算衰减系数 decay。
+        """
+        
+        if min_distance > safe_distance:
+            return 1.0  # 安全距离外，完全不衰减
+        elif min_distance < critical_distance:
+            return 0.5  # 过近时加大角速度调整
+        else:
+            # 距离越近，衰减越明显
+            return 0.5 + 0.5 * (min_distance - critical_distance) / (safe_distance - critical_distance)
 
+
+    def compute_ref_speed(self, min_distance=0.5,default_speed: float = 1.0, critical_distance: float = 1.0) -> float:
+        """
+        动态调整参考速度。
+        """
+        
+        # min_distance = min([obstacle.padded_polygon.distance(robot.point) for obstacle in obstacles])
+        
+        if min_distance < critical_distance:
+            return default_speed * 0.5  # 临近障碍物时减速
+        else:
+            return default_speed  # 正常速度
+    
     def step(self, action, time_step: float) -> None:
         """
         Ref:

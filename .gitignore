@@ -5,4 +5,5 @@
 *.sif
 *.avi
 .vscode/
-mpc_solver/*
+src/mpc_solver/**
+**venv

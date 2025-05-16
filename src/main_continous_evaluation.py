@@ -7,7 +7,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 ### DRL import
-import gym
+import gymnasium as gym
+import gymnasium.envs 
 from torch import no_grad
 from stable_baselines3 import DDPG,TD3
 from pkg_ddpg_td3.utils.per_ddpg import PerDDPG
@@ -32,14 +33,28 @@ from typing import List, Tuple
 MAX_RUN_STEP = 200
 DYN_OBS_SIZE = 0.8 + 0.8
 
-def ref_traj_filter(original: np.ndarray, new: np.ndarray, decay=1):
+# def ref_traj_filter(original: np.ndarray, new: np.ndarray, decay=1):
+#     filtered = original.copy()
+#     for i in range(filtered.shape[0]):
+#         filtered[i, :] = (1-decay) * filtered[i, :] + decay * new[i, :]
+#         decay *= decay
+#         if decay < 1e-2:
+#             decay = 0.0
+#     return filtered
+
+def ref_traj_filter(original: np.ndarray, new: np.ndarray, decay=1, min_decay=0.01, adaptive=True):
     filtered = original.copy()
     for i in range(filtered.shape[0]):
+        # Adaptive decay: reduce decay when near obstacles
+        if adaptive:
+            distance_to_obstacle = np.linalg.norm(original[i, :] - new[i, :])  # distance compute
+            decay = max(min_decay, 1 - distance_to_obstacle * 0.1)
         filtered[i, :] = (1-decay) * filtered[i, :] + decay * new[i, :]
         decay *= decay
         if decay < 1e-2:
             decay = 0.0
     return filtered
+
 
 def load_rl_model_env(generate_map, index: int) -> Tuple[PerDDPG, TD3, TrajectoryPlannerEnvironment]:
     variant = [
@@ -66,7 +81,7 @@ def load_rl_model_env(generate_map, index: int) -> Tuple[PerDDPG, TD3, Trajector
     model_path_ddpg = os.path.join(pathlib.Path(__file__).resolve().parents[1], 'Model/ddpg', model_folder_name, 'best_model')
     model_path_td3 = os.path.join(pathlib.Path(__file__).resolve().parents[1], 'Model/td3', model_folder_name, 'best_model')
     
-    env_eval:TrajectoryPlannerEnvironment = gym.make(variant['env_name'], generate_map=generate_map)
+    env_eval:TrajectoryPlannerEnvironment = gym.make(variant['env_name'], generate_map=generate_map, max_episode_steps=None)
     env_checker.check_env(env_eval)
     td3_model = TD3.load(model_path_td3)
     ddpg_model = PerDDPG.load(model_path_ddpg)
@@ -105,12 +120,14 @@ def main_process(rl_index:int=1, decision_mode:int=1, to_plot=False, scene_optio
         print(f"The decision mode is: {prt_decision_mode[decision_mode]}")
 
     time_list = []
+    print('Loading the enviroment')
 
     ddpg_model, td3_model, env_eval = load_rl_model_env(generate_map(*scene_option), rl_index)
-
+    print('env_val object:',env_eval)
     CONFIG_FN = 'mpc_longiter.yaml'
     cfg_fpath = os.path.join(pathlib.Path(__file__).resolve().parents[1], 'config', CONFIG_FN)
     traj_gen = load_mpc(cfg_fpath, verbose=verbose)
+    env_eval = env_eval.unwrapped  # get original obj
     geo_map = get_geometric_map(env_eval.get_map_description(), inflate_margin=0.7)
     traj_gen.update_static_constraints(geo_map.processed_obstacle_list) # assuming static obstacles not changed
 
@@ -356,10 +373,10 @@ if __name__ == '__main__':
     scene_option_list = [
                         #  (1, 1, 2), # a-medium
                         #  (1, 1, 3), # b-large
-                         (1, 2, 1), # c-small
+                        #  (1, 2, 1), # c-small
                         #  (1, 2, 2), # d-large
                         #  (1, 3, 1), # e-small
-                        #  (1, 3, 2), # f-large
+                         (1, 3, 2), # f-large
                         #  (1, 4, 1), # face-to-face
                         #  (2, 1, 1), # right turn with an obstacle
                         #  (2, 1, 2), # sharp turn with an obstacle
@@ -371,23 +388,23 @@ if __name__ == '__main__':
 
         print(f"=== Scene {scene_option[0]}-{scene_option[1]}-{scene_option[2]} ===")
 
-        mpc_metrics = Metrics(mode='MPC')
-        ddpg_lid_metrics = Metrics(mode='DDPG-L')
-        ddpg_img_metrics = Metrics(mode='DDPG-V')
+        # mpc_metrics = Metrics(mode='MPC')
+        # ddpg_lid_metrics = Metrics(mode='DDPG-L')
+        # ddpg_img_metrics = Metrics(mode='DDPG-V')
         hyb_ddpg_lid_metrics = Metrics(mode='HYB-DDPG-L')
-        hyb_ddpg_img_metrics = Metrics(mode='HYB-DDPG-V')
-        td3_lid_metrics = Metrics(mode='TD3-L')
-        td3_img_metrics = Metrics(mode='TD3-V')
-        hyb_td3_lid_metrics = Metrics(mode='HYB-TD3-L')
-        hyb_td3_img_metrics = Metrics(mode='HYB-TD3-V')
+        # hyb_ddpg_img_metrics = Metrics(mode='HYB-DDPG-V')
+        # td3_lid_metrics = Metrics(mode='TD3-L')
+        # td3_img_metrics = Metrics(mode='TD3-V')
+        # hyb_td3_lid_metrics = Metrics(mode='HYB-TD3-L')
+        # hyb_td3_img_metrics = Metrics(mode='HYB-TD3-V')
 
         for i in range(num_trials):
             print(f"Trial {i+1}/{num_trials}")
             # mpc_metrics = main_evaluate(rl_index=1, decision_mode=0, metrics=mpc_metrics, scene_option=scene_option)
             # ddpg_lid_metrics = main_evaluate(rl_index=1, decision_mode=1, metrics=ddpg_lid_metrics, scene_option=scene_option)
-            ddpg_img_metrics = main_evaluate(rl_index=0, decision_mode=1, metrics=ddpg_img_metrics, scene_option=scene_option)
-            # hyb_ddpg_lid_metrics = main_evaluate(rl_index=1, decision_mode=3, metrics=hyb_ddpg_lid_metrics, scene_option=scene_option)
-            hyb_ddpg_img_metrics = main_evaluate(rl_index=0, decision_mode=3, metrics=hyb_ddpg_img_metrics, scene_option=scene_option)
+            # ddpg_img_metrics = main_evaluate(rl_index=0, decision_mode=1, metrics=ddpg_img_metrics, scene_option=scene_option)
+            hyb_ddpg_lid_metrics = main_evaluate(rl_index=1, decision_mode=3, metrics=hyb_ddpg_lid_metrics, scene_option=scene_option)
+            # hyb_ddpg_img_metrics = main_evaluate(rl_index=0, decision_mode=3, metrics=hyb_ddpg_img_metrics, scene_option=scene_option)
             # td3_lid_metrics = main_evaluate(rl_index=1, decision_mode=2, metrics=td3_lid_metrics, scene_option=scene_option)
             # td3_img_metrics = main_evaluate(rl_index=0, decision_mode=2, metrics=td3_img_metrics, scene_option=scene_option)
             # hyb_td3_lid_metrics = main_evaluate(rl_index=1, decision_mode=4, metrics=hyb_td3_lid_metrics, scene_option=scene_option)
@@ -400,16 +417,16 @@ if __name__ == '__main__':
         # print()
         # print('DDPG Lidar')
         # print(ddpg_lid_metrics.get_average(round_digits))
-        # print()
-        print('DDPG Image')
-        print(ddpg_img_metrics.get_average(round_digits))
         print()
-        # print('DDPG hybrid Lidar')
-        # print(hyb_ddpg_lid_metrics.get_average(round_digits))
-        # print()
-        print('DDPG hybrid Image')
-        print(hyb_ddpg_img_metrics.get_average(round_digits))
-        print('td3 Lidar')
+        # print('DDPG Image')
+        # print(ddpg_img_metrics.get_average(round_digits))
+        print()
+        print('DDPG hybrid Lidar')
+        print(hyb_ddpg_lid_metrics.get_average(round_digits))
+        print()
+        # print('DDPG hybrid Image')
+        # print(hyb_ddpg_img_metrics.get_average(round_digits))
+        # print('td3 Lidar')
         # print(td3_lid_metrics.get_average(round_digits))
         # print()
         # print('td3 Image')
@@ -428,9 +445,9 @@ if __name__ == '__main__':
             print(f"=== Scene {scene_option[0]}-{scene_option[1]}-{scene_option[2]} ===")
             # print(mpc_metrics.write_latex(round_digits))
             # print(ddpg_lid_metrics.write_latex(round_digits))
-            print(ddpg_img_metrics.write_latex(round_digits))
-            # print(hyb_ddpg_lid_metrics.write_latex(round_digits))
-            print(hyb_ddpg_img_metrics.write_latex(round_digits))
+            # print(ddpg_img_metrics.write_latex(round_digits))
+            print(hyb_ddpg_lid_metrics.write_latex(round_digits))
+            # print(hyb_ddpg_img_metrics.write_latex(round_digits))
             # print(td3_lid_metrics.write_latex(round_digits))
             # print(td3_img_metrics.write_latex(round_digits))
             # print(hyb_td3_lid_metrics.write_latex(round_digits))
