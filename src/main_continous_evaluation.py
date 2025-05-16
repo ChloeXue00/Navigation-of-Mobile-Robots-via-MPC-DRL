@@ -30,6 +30,9 @@ from pkg_ddpg_td3.utils.map import test_scene_1_dict, test_scene_2_dict
 from timer import PieceTimer, LoopTimer
 from typing import List, Tuple
 
+import warnings
+warnings.filterwarnings("ignore")
+
 MAX_RUN_STEP = 200
 DYN_OBS_SIZE = 0.8 + 0.8
 
@@ -314,7 +317,6 @@ def main_process(rl_index:int=1, decision_mode:int=1, to_plot=False, scene_optio
                     if to_plot:
                         print(f"Step {i}.Runtime (Hybrid td3): {last_mpc_time+last_rl_time} = {last_mpc_time}+{last_rl_time}ms")        
 
-
                 if to_plot & (i%1==0): # render every third frame
                     env_eval.render(dqn_ref=rl_ref, actual_ref=chosen_ref_traj)
 
@@ -371,12 +373,12 @@ if __name__ == '__main__':
     num_trials = 50 # 50
     print_latex = True
     scene_option_list = [
-                        #  (1, 1, 2), # a-medium
+                         (1, 1, 2), # a-medium
                         #  (1, 1, 3), # b-large
                         #  (1, 2, 1), # c-small
                         #  (1, 2, 2), # d-large
                         #  (1, 3, 1), # e-small
-                         (1, 3, 2), # f-large
+                        #  (1, 3, 2), # f-large
                         #  (1, 4, 1), # face-to-face
                         #  (2, 1, 1), # right turn with an obstacle
                         #  (2, 1, 2), # sharp turn with an obstacle

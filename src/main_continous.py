@@ -34,6 +34,10 @@ from typing import List, Tuple
 import warnings
 warnings.filterwarnings("ignore")
 
+import sys
+sys.path.append('/home/fengxiang/DRL-Traj-Planner/src')  # 确保路径正确
+from connective_quadtree import *  # 导入所有类和函数
+from connective_quadtree import QuadtreeClass, generate_map  # 根据实际函数名调整
 
 #add register
 from gymnasium.envs.registration import register
@@ -44,8 +48,8 @@ register(
     kwargs={
         "components": [Component()],  # 替换为实际组件实例
         "generate_map": generate_map,  
-        "time_step": 0.2,  
-    },
+        "time_step": 0.2
+    }
 )
 
 

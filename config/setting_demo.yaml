@@ -1,0 +1,12 @@
+### Data
+data_dir: schedule_demo_data
+
+start_file: robot_start.json
+graph_file: graphdata.json
+map_file: mapdata.json
+schedule_file: schedule.csv
+
+### Config
+config_robot_file: robot_spec.yaml
+
+config_mpc_file: mpc_fast.yaml

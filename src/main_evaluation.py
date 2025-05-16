@@ -25,6 +25,7 @@ from util.mpc_config import Configurator
 ### Helper
 from helper_main import generate_map, get_geometric_map, HintSwitcher, Metrics
 from pkg_ddpg_td3.environment.components import Component
+import gymnasium.envs
 
 ### Others
 from timer import PieceTimer

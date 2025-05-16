@@ -111,7 +111,11 @@ class MobileRobot:
         
     # undynamic way
     def step_with_decay_angular_velocity(self, time_step: float, ref_speed:float=None) -> None:
-        self.angular_velocity *= 0.95
+        # self.angular_velocity *= 0.95
+        # self.angular_velocity *= 0.85
+        # self.angular_velocity *= 1
+        self.angular_velocity *= 0.9
+        # self.angular_velocity *= 0.75
         self.angle += time_step * self.angular_velocity
         if ref_speed is None:
             ref_speed = self.speed

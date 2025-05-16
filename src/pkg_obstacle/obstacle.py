@@ -15,7 +15,7 @@ All obstacles are based on the Shapely geometry objects.
 
 
 class ObstacleTemplate(Obstacle):
-    def __init__(self, geometry: BaseGeometry, geometry_shape: str, motion_model:MotionModel=None, id_:int=None, name:str=None) -> None:
+    def __init__(self, geometry: BaseGeometry, geometry_shape: str, motion_model:MotionModel=None, id_: int=None, name:str=None) -> None:
         super().__init__(geometry, geometry_shape, motion_model, id_, name)
         self.geometry: BaseGeometry
 
@@ -88,7 +88,8 @@ class EllipseObstacle(ObstacleTemplate):
         direction_point = (self.geometry.center[0] + self.geometry.radii[0]*np.cos(self.geometry.angle),
                            self.geometry.center[1] + self.geometry.radii[0]*np.sin(self.geometry.angle))
         ax.arrow(self.geometry.center[0], self.geometry.center[1], 
-                 direction_point[0] - self.geometry.center[0], direction_point[1] - self.geometry.center[1], 
+                 direction_point[0] - self.geometry.center[0], 
+                 direction_point[1] - self.geometry.center[1], 
                  head_width=0.1, head_length=0.1, fc='k', ec='k')
 
 
@@ -107,7 +108,7 @@ class CircleObstacle(ObstacleTemplate):
         x, y = self.position
         return np.array([x, y, self.geometry.angle])
 
-    def step(self, action: Any, dt:float=None) -> None:
+    def step(self, action: Any, dt:float=None):
         """Step the obstacle forward in time."""
         if self.motion_model is not None:
             new_state = self.motion_model(self.state, action, dt)

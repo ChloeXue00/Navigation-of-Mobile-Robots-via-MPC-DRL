@@ -14,6 +14,11 @@ from pkg_ddpg_td3.utils.map import generate_map_scene_1, generate_map_scene_2
 
 from typing import List, Tuple
 
+import sys
+sys.path.append('/home/fengxiang/DRL-Traj-Planner/src')  # 确保路径正确
+from connective_quadtree import *  # 导入所有类和函数
+from connective_quadtree import QuadtreeClass, generate_map  # 根据实际函数名调整
+
 
 class Inflator:
     def __init__(self, inflate_margin):
@@ -24,6 +29,39 @@ class Inflator:
         return geometry_tools.polygon_to_vertices(shapely_inflated)
     
 
+# 创建 quadtree 地图
+map_data = generate_map()
+# 将地图数据传递给 MPC 控制器
+# Initialize the MPC controller with the generated map data
+mpc_controller = InterfaceMpc(map_data)
+
+# Set up the configuration for the MPC controller
+config = Configurator()
+config.ts = 0.1  # Set the time step
+config.ns = 10   # Set the number of states
+config.nu = 2    # Set the number of control inputs
+config.N_hor = 20  # Set the prediction horizon
+
+# Create a TrajectoryGenerator instance with the configuration
+traj_gen = TrajectoryGenerator(config=config, use_tcp=False, verbose=True)
+
+# Load the robot dynamics into the trajectory generator
+def robot_dynamics(state, action, ts):
+    # Define the robot's motion model here
+    next_state = state + action * ts  # Simplified example
+    return next_state
+
+traj_gen.load_robot_dynamics(robot_dynamics)
+
+# Load an initial state and goal state for the trajectory generator
+initial_state = np.array([0, 0, 0])  # Example initial state
+goal_state = np.array([10, 10, 0])   # Example goal state
+traj_gen.load_init_state(initial_state, goal_state)
+
+# Set obstacle weights for the trajectory generator
+traj_gen.set_obstacle_weights(stc_weights=1000, dyn_weights=1000)
+
+
 class HintSwitcher:
     def __init__(self, max_switch_distance: float, min_detach_distance: float, min_detach_steps:float=5):
         self.switch_distance = max_switch_distance
@@ -33,14 +71,24 @@ class HintSwitcher:
         self.switch_on = False
 
     def switch(self, current_position: tuple, original_traj: List[tuple], new_traj: List[tuple], obstacle_list: List[List[tuple]]) -> bool:
+        #add check V shape obstacle
+        # near_v_shape_obstacle = any(len(obstacle) == 3 for obstacle in obstacle_list)  # 假设 V 型障碍物有 3 个顶点
+        # if near_v_shape_obstacle:
+        #     # self.switch_distance = 7  # 针对 V 型障碍物调整
+        # else:
+        #     self.switch_distance = 10  # 常规值
+        
         cnt_flag = False
         for i, old_pos in enumerate(original_traj):
             for obstacle in obstacle_list:
                 shapely_obstacle = Polygon(obstacle)
                 dist = shapely_obstacle.distance(Point(current_position))
                 if shapely_obstacle.contains(Point(old_pos[:2])): # or shapely_obstacle.contains(Point(new_pos[:2])):
+                # if shapely_obstacle.contains(Point(new_pos[:2])):
                     if (dist < self.switch_distance) & (self.switch_on == False):
                             self.switch_on = True
+                            #add time check
+                            print(f"Switch On: {self.switch_on}, Distance: {dist}, Detach Count: {self.detach_cnt}")
                             return self.switch_on
                 elif (dist > self.detach_distance) & (self.switch_on == True):
                     if self.detach_cnt > self.detach_steps:

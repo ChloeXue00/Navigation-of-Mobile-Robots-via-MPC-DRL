@@ -67,7 +67,10 @@ class TrajectoryGenerator:
         solver_path ='/home/fengxiang/DRL-Traj-Planner/src/mpc_solver/navi_longiter'
         # print(f"Solver Path: {solver_path}")
         # assert os.path.exists(solver_path), f"Solver path does not exist: {solver_path}"
-
+        import navi_longiter
+        solver = navi_longiter.solver()
+        from connective_quadtree import QuadTree
+        quadtree = QuadTree(0, 0, 100, 100)
         import opengen as og
         if not use_tcp:
             sys.path.append(solver_path)
@@ -158,7 +161,7 @@ class TrajectoryGenerator:
         self.ref_traj = self.get_global_ref_traj(self.ts, ref_path, self.state, self.base_speed)
 
     def check_termination_condition(self, state: np.ndarray, action: np.ndarray, final_goal: np.ndarray) -> bool:
-        if np.allclose(state[:2], final_goal[:2], atol=0.05, rtol=0) and abs(action[0]) < 0.05:
+        if np.allclose(state[:2], final_goal[:2], atol=0.05, rtol=0) and abs(action[0] < 0.05):
             terminated = True
             print(f"{self.__prtname} MPC solution found.")
         else:
@@ -174,37 +177,37 @@ class TrajectoryGenerator:
         Return:
             ref_traj: x, y coordinates and the heading angles
         '''
-        x, y = state[0], state[1]
-        x_next, y_next = ref_path[0].x, ref_path[0].y
+        x, y = state[0], state[1] # take input state.x and state.y as inital x and initial y
+        x_next, y_next = ref_path[0].x, ref_path[0].y  # take pathnode.x and pathnode.y as x_next and y_next
         
-        ref_traj = TrajectoryNodeList([])
-        path_idx = 0
-        traveling = True
+        ref_traj = TrajectoryNodeList([])   # generate ref_traj from Trajectory Node list, each node has x,y,and theta
+        path_idx = 0                        #set path index from 0
+        traveling = True                        #if the traj is continue
         while(traveling):# for n in range(N):
             while(True):
-                dist_to_next = math.hypot(x_next-x, y_next-y)
-                if dist_to_next < 1e-9:
-                    path_idx += 1
-                    x_next, y_next = ref_path[path_idx].x, ref_path[path_idx].y
+                dist_to_next = math.hypot(x_next-x, y_next-y) # compute the distance from current node to next path node
+                if dist_to_next < 1e-9:                         # if distance to next node is smaller than 1e-9, which is almost arrived
+                    path_idx += 1                               # path index add 1
+                    x_next, y_next = ref_path[path_idx].x, ref_path[path_idx].y   # x_next and y_next is the x and y position of ref_path[path_idx].x and ref_path[path_idx].y
                     break
-                x_dir = (x_next-x) / dist_to_next
-                y_dir = (y_next-y) / dist_to_next
-                eta = dist_to_next/speed # estimated time of arrival
-                if eta > ts: # move to the target node for t
-                    x = x+x_dir*speed*ts
-                    y = y+y_dir*speed*ts
-                    break # to append the position
-                else: # move to the target node then set a new target
+                x_dir = (x_next-x) / dist_to_next               # if the relative distance is not so big, move to the direction of next_x and next_y, x direction is x-axis distance between current node and next path node, divided by the hypot distance from current node to the next node
+                y_dir = (y_next-y) / dist_to_next               # y direction is y-axis distance between current node and next path node, divided by the hypot distance from current node to the next node
+                eta = dist_to_next/speed # estimated time of arrival # the estimated arrival time equals to relative distance divided by speed
+                if eta > ts: # move to the target node for t    #if the estimated is larger than input ts, following x and y will be updated within time ts
+                    x = x+x_dir*speed*ts                        # x updated to the current x + x_direction* speed * ts,
+                    y = y+y_dir*speed*ts                        # y updated to the current y + y_direction* speed * ts,
+                    break # to append the position              # updated within ts and done, break
+                else: # move to the target node then set a new target  # if ts is larger, than the following x and y will be updated within eta
                     x = x+x_dir*speed*eta
                     y = y+y_dir*speed*eta
-                    path_idx += 1
-                    if path_idx > len(ref_path)-1 :
-                        traveling = False
-                        break
+                    path_idx += 1                           # and path_idx will be updated by 1 step
+                    if path_idx > len(ref_path)-1 :         # if path index is already larger than the ref_path steps, then stop traveling
+                        traveling = False                  
+                        break                               # done and break
                     else:
-                        x_next, y_next = ref_path[path_idx][0], ref_path[path_idx][1]
-            if not dist_to_next < 1e-9:
-                ref_traj.append(TrajectoryNode(x, y, math.atan2(y_dir,x_dir)))
+                        x_next, y_next = ref_path[path_idx][0], ref_path[path_idx][1] # if path index is smaller than the ref path length, then next x and next y will be updated according to ref path path index
+            if not dist_to_next < 1e-9:                     # if distance to the next node is larger than 1e-9
+                ref_traj.append(TrajectoryNode(x, y, math.atan2(y_dir,x_dir))) # if the agent is not arrived, interplot the current node to the ref_traj(append these x,y,and theta directly to the ref_traj)
         return ref_traj
     
     @staticmethod
@@ -270,7 +273,7 @@ class TrajectoryGenerator:
         if len(self.past_actions):
             last_u = self.past_actions[-1]
         else:
-            last_u = np.zeros(self.nu)
+            last_u = np.zeros(self.nu)  #控制输入的维度
             
         ### Assemble parameters for solver & Run MPC###
         params = list(self.state) + list(finish_state) + list(last_u) + \
@@ -316,7 +319,7 @@ class TrajectoryGenerator:
         Comment:
             The motion model (dynamics) is defined initially.
         '''
-        if self.use_tcp:
+        if self.use_tcp: #bool, 否使用 TCP（Transmission Control Protocol）通信协议进行交互
             return self.run_solver_tcp(parameters, state, take_steps)
 
         import opengen as og
@@ -343,8 +346,42 @@ class TrajectoryGenerator:
         actions = [np.array(action) for action in actions]
         return taken_states, pred_states, actions, cost, solver_time, exit_status
 
+    # def run_solver_tcp(self, parameters:list, state: np.ndarray, take_steps:int=1):
+    #     solution = self.mng.call(parameters) #mng 可能是一个接口对象，用于与外部优化器（如求解器、仿真环境）通信。
+    #     if solution.is_ok():
+    #         # Solver returned a solution
+    #         solution_data = solution.get()
+    #         u = solution_data.solution
+    #         cost: float = solution_data.cost
+    #         exit_status: str = solution_data.exit_status
+    #         solver_time: float = solution_data.solve_time_ms
+    #     else:
+    #         # Invocation failed - an error report is returned
+    #         solver_error = solution.get()
+    #         error_code = solver_error.code
+    #         error_msg = solver_error.message
+    #         self.mng.kill() # kill so rust code wont keep running if python crashes
+    #         raise RuntimeError(f"MPC Solver error: [{error_code}]{error_msg}")
+
+    #     taken_states:List[np.ndarray] = []
+    #     for i in range(take_steps):
+    #         state_next = self.motion_model( state, np.array(u[(i*self.nu):((i+1)*self.nu)]), self.ts )
+    #         taken_states.append(state_next)
+
+    #     pred_states:List[np.ndarray] = [taken_states[-1]]
+    #     for i in range(len(u)//self.nu):
+    #         pred_state_next = self.motion_model( pred_states[-1], np.array(u[(i*self.nu):(2+i*self.nu)]), self.ts )
+    #         pred_states.append(pred_state_next)
+    #     pred_states = pred_states[1:]
+
+    #     actions = u[:self.nu*take_steps]
+    #     actions = np.array(actions).reshape(take_steps, self.nu).tolist()
+    #     actions = [np.array(action) for action in actions]
+    #     return taken_states, pred_states, actions, cost, solver_time, exit_status
+    
+    
     def run_solver_tcp(self, parameters:list, state: np.ndarray, take_steps:int=1):
-        solution = self.mng.call(parameters)
+        solution = self.mng.call(parameters) #mng 可能是一个接口对象，用于与外部优化器（如求解器、仿真环境）通信。
         if solution.is_ok():
             # Solver returned a solution
             solution_data = solution.get()
@@ -366,7 +403,7 @@ class TrajectoryGenerator:
             taken_states.append(state_next)
 
         pred_states:List[np.ndarray] = [taken_states[-1]]
-        for i in range(len(u)//self.nu):
+        for i in range(len(u)//self.nu): #控制输入序列包含的时间步数量
             pred_state_next = self.motion_model( pred_states[-1], np.array(u[(i*self.nu):(2+i*self.nu)]), self.ts )
             pred_states.append(pred_state_next)
         pred_states = pred_states[1:]
@@ -375,6 +412,7 @@ class TrajectoryGenerator:
         actions = np.array(actions).reshape(take_steps, self.nu).tolist()
         actions = [np.array(action) for action in actions]
         return taken_states, pred_states, actions, cost, solver_time, exit_status
+    
 
     def _vis_params(self, params, current_ref_traj):
         import matplotlib.pyplot as plt

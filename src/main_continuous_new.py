@@ -87,6 +87,7 @@ def ref_traj_filter(original: np.ndarray, new: np.ndarray, decay=1, min_decay=0.
         # Adaptive decay: reduce decay when near obstacles
         if adaptive:
             distance_to_obstacle = np.linalg.norm(original[i, :] - new[i, :])  # distance compute
+            # print('distance_to_obstacle:',distance_to_obstacle)
             decay = max(min_decay, 1 - distance_to_obstacle * 0.1)
         filtered[i, :] = (1-decay) * filtered[i, :] + decay * new[i, :]
         decay *= decay
@@ -204,8 +205,18 @@ def main(rl_index:int=1, decision_mode:int=1, to_plot=False, scene_option:Tuple[
             rl_ref = None
             last_dyn_obstacle_list = None      
 
-            switch = HintSwitcher(10, 2, 10)
-
+            switch = HintSwitcher(10, 2, 10)  
+            #max_switch_distance,min_detach_distance,min_detach_steps
+            '''
+            max_switch_distance : distance between robot and obstacles, if < this , will transfer from original --> new traj
+            
+            min_detach_distance: distance to distatch the new traj, if want robot to get rid of new_traj earlier and back to original
+                                traj, reduce this value; if want to take more time to go back to original obstacles, increase this value
+                                
+            min_detach_steps: should reach min_steps to back to original_traj, 
+                                if too soon to go back, increase this value, if too late to go back to original path, decrease this value.
+            '''
+            # switch = HintSwitcher(2, 2, 2)
             print('Running')
             for i in range(0, MAX_RUN_STEP):
                 states = []
@@ -287,6 +298,7 @@ def main(rl_index:int=1, decision_mode:int=1, to_plot=False, scene_option:Tuple[
                     robot_sim:MobileRobot = copy.deepcopy(env_eval.agent)
                     robot_sim:MobileRobot
                     for j in range(20):
+                    # for j in range(50):
                         if j == 0:
                             robot_sim.step(action_index, traj_gen.config.ts)
                         else:
@@ -296,9 +308,6 @@ def main(rl_index:int=1, decision_mode:int=1, to_plot=False, scene_option:Tuple[
                     # last_rl_ref = rl_ref
                     
                     if dyn_obstacle_list:
-                        # for obstacle in dyn_obstacle_list:
-                        #     predicted_position = obstacle.position + obstacle.velocity * traj_gen.config.ts *10
-                        #     dyn_obstacle_pred_list.append(circle_to_rect(predicted_position, expand_margin=True))
                         # traj_gen.update_dynamic_constraints([dyn_obstacle_tmp*20])
                         traj_gen.update_dynamic_constraints(dyn_obstacle_pred_list)
                     original_ref_traj, rl_ref_traj, extra_ref_traj = traj_gen.get_local_ref_traj(np.array(rl_ref),20)
@@ -306,11 +315,11 @@ def main(rl_index:int=1, decision_mode:int=1, to_plot=False, scene_option:Tuple[
                     # filtered_ref_traj = ref_traj_filter(original_ref_traj, rl_ref_traj, decay=0.8)
                     
                     if switch.switch(traj_gen.state[:2], extra_ref_traj.tolist(), filtered_ref_traj.tolist(), geo_map.processed_obstacle_list+dyn_obstacle_list_poly):
-                        print('1')
+                        print('1')  #blend traj
                         chosen_ref_traj = filtered_ref_traj
                         print(f"Chosen filtered reference trajectory shape: {chosen_ref_traj.shape}")
                     else:
-                        print('2')
+                        print('2')  #mpc
                         chosen_ref_traj = original_ref_traj
                         print('choose original trajectory')
                     timer_mpc = PieceTimer()
@@ -340,10 +349,10 @@ def main(rl_index:int=1, decision_mode:int=1, to_plot=False, scene_option:Tuple[
                     robot_sim:MobileRobot = copy.deepcopy(env_eval.agent)
                     robot_sim:MobileRobot
                     for j in range(20):
-                        # if j == 0:
-                        robot_sim.step(action_index, traj_gen.config.ts)
-                        # else:
-                            # robot_sim.step_with_ref_speed(traj_gen.config.ts, 1.0)
+                        if j == 0:
+                            robot_sim.step(action_index, traj_gen.config.ts)
+                        else:
+                            robot_sim.step_with_ref_speed(traj_gen.config.ts, 1.0)
                         rl_ref.append(list(robot_sim.position))
                     last_rl_time = timer_rl(4, ms=True)
                     # last_rl_ref = rl_ref
@@ -417,11 +426,10 @@ if __name__ == '__main__':
    
 
     #time_list_mpc     = main(rl_index=1,    decision_mode=0,  to_plot=True, scene_option=scene_option, save_num=1) # Eval MPC using main.py
-     # scene_option = (1, 1, 3)
-    # scene_option = (2, 0, 3)
+   
     # scene_option = (1, 4, 2) #generate_map_scene_1 ,single dyn obstacles + cross
     # scene_option = (1, 4, 1) #generate_map_scene_1 ,single dyn obstacles + crash
-    # scene_option = (1, 3, 1) #generate_map_scene_1 , Single non-convex static obstacle + big u-shape
+    scene_option = (1, 3, 1) #generate_map_scene_1 , Single non-convex static obstacle + big u-shape
     # scene_option = (1, 3, 2) #generate_map_scene_1 ,Single non-convex static obstacle + small u-shape
     # scene_option = (1, 3, 3) #generate_map_scene_1 , Single non-convex static obstacle + big v-shape
     # scene_option = (1, 3, 4) #generate_map_scene_1 , Single non-convex static obstacle + small v-shape
@@ -430,8 +438,8 @@ if __name__ == '__main__':
     # scene_option = (1, 2, 2) #generate_map_scene_1 ,Two rectangular static obstacle +large stagger
     # scene_option = (1, 2, 1) #generate_map_scene_1 ,Two rectangular static obstacle +small stagger
     # scene_option = (1, 1, 1) #generate_map_scene_1 ,single rectangular static obstacle +small 
-    # scene_option = (1, 1, 2) #generate_map_scene_1 ,single rectangular static obstacle +medium 
-    scene_option = (1, 1, 3) #generate_map_scene_1 ,single rectangular static obstacle +large 
+    # scene_option = (1, 1, 2) #generate_map_scene_1 ,single rectangular static obstacle +medium ,HintSwitch(2,2,2)
+    # scene_option = (1, 1, 3) #generate_map_scene_1 ,single rectangular static obstacle +large 
 
 
     
